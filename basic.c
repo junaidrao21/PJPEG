@@ -4,21 +4,7 @@
 #include <time.h>
 #include <math.h>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-//#include "image.h"
 
-#define TILE_WIDTH 16
-
-//Code written for 1D arrays ahead of time
-//for CUDA implementation. 
-//
-//Assumptions: the 'arr' has been malloc'd
-//			   before the function call.
-//
-//Functionality: linearizes the traversal of
-//			     the 8x8 block before the Huffman
-//				 encoding scheme is used.
 void Traverse(char *block, char *arr)
 {
 	int count = 0;
@@ -79,14 +65,20 @@ int main (int argc, char **argv)
 //	int *hostInputImage, *hostOutputImage;
 //	int *deviceInputImage, *deviceOutputImage;
 
+	FILE *f_in  = fopen(argv[1], "r");
+	FILE *f_out = fopen("output.ppm", "w");
+	char img_type[16];
+	int row, col, char_val;
+	int i, j;
+
 	char test[64] = {  1,  2,  6,  7, 15, 16, 28, 29,
-		          3,  5,  8, 14, 17, 27, 30, 43,
-	                  4,  9, 13, 18, 26, 31, 42, 44,
-			 10, 12, 19, 25, 32, 41, 45, 54,
-			 11, 20, 24, 33, 40, 46, 53, 55,
-			 21, 23, 34, 39, 47, 52, 56, 61,
-	 		 22, 35, 38, 48, 51, 57, 60, 62,
-			 36, 37, 49, 50, 58, 59, 63, 64};
+		    	       3,  5,  8, 14, 17, 27, 30, 43,
+	                   4,  9, 13, 18, 26, 31, 42, 44,
+			 		  10, 12, 19, 25, 32, 41, 45, 54,
+					  11, 20, 24, 33, 40, 46, 53, 55,
+					  21, 23, 34, 39, 47, 52, 56, 61,
+			 		  22, 35, 38, 48, 51, 57, 60, 62,
+					  36, 37, 49, 50, 58, 59, 63, 64};
 
 
 	char *A = (char *)calloc(64, sizeof(char));
@@ -96,47 +88,54 @@ int main (int argc, char **argv)
 
 	Traverse(A, B);
 
-	int i;
-	for(i=0; i<64; i++)
-		printf("B[%d] = (%d).\n", i, (int)B[i]);
+	//for(i=0; i<64; i++)
+	//	printf("B[%d] = (%d).\n", i, (int)B[i]);
+	
+	fscanf(f_in, "%s\n", img_type);
+    fscanf(f_in, "%d %d\n", &row, &col);
+    fscanf(f_in, "%d\n", &char_val); 
 
-    /*
-	
-	clock_t gpu_start, gpu_end;
+    char **img_c   = (char **)calloc(row, sizeof(char *));
+    int  **img_i   = (int **)calloc(row, sizeof(int *));
+    double **img_d = (double **)calloc(row, sizeof(double *));
+    for(i=0; i<row; i++)
+    {
+    	img_c[i] = (int *)calloc(col*3, sizeof(int));
+    	img_i[i] = (char *)calloc(col*3, sizeof(char));
+    	img_d[i] = (double *)calloc(col*3, sizeof(double));
+    }
 
-	*if (argc != 5)
-	{
-		printf("Usage: ./lab2 <input-image> <output-image-name> <blur/gaussian/emboss/sharp> <1d/2d kernel>\n");
-		exit(1);
-	}*/
+    //READ IMAGE
+    for(i=0; i<row; i++)
+	    for(j=0; j<col*3; j++)
+	         fscanf(f_in, "%c", &img_i[i][j]);
 
-	// Read in image and convert to readable format
-	//read_image_template<int>(argv[1], &hostInputImage, &imageWidth, &imageHeight);
+	//RBG -> YCbCr
+	for(i=0; i<row; i++)
+	    for(j=0; j<col*3; j+=3)
+	    {
+	    	img_i[i][j]   = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
+	    	img_i[i][j+1] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
+	    	img_i[i][j+2] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
+	    }	
 
-	// Set image size information
-	//int img_size = imageWidth * imageHeight * sizeof(int);
+	//CENTER
+	for(i=0; i<row; i++)
+	    for(j=0; j<col*3; j++)
+	    	img_i[i][j] -= 127;    
 
-	// Allocate memory for image on GPU
-	//cudaMalloc((void **)&deviceInputImage, img_size);
-	//cudaMalloc((void **)&deviceOutputImage, img_size);
-		
-	// Copy image to device
-	//cudaMemcpy( deviceInputImage, hostInputImage, img_size, cudaMemcpyHostToDevice );
-	//cudaMemcpy( deviceMatrix, hostMatrix, sizeof(double)*matSize*matSize, cudaMemcpyHostToDevice );
-	
-	
-	/*****Pre-Processing*****/
-	
-	
-	
-	/*****Transforming*******/
-	
-	
-	/*****Quantization*******/
-	
-	
-	/********Encoding********/
-	
-    
+
+	fprintf(f_out, "%s\n", img_type);
+    fprintf(f_out, "%d %d\n", &row, &col);
+    fprintf(f_out, "%d\n", &char_val); 
+	for(i=0; i<row; i++)
+	    for(j=0; j<col*3; j++)
+	         fprintf(f_out, "%c", &img_i[i][j]);
+
+	//DISCRETE COSINE TRANSFORM
+
+
+
+
 	return 0;
 }
