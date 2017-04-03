@@ -108,7 +108,7 @@ int main (int argc, char **argv)
     //READ IMAGE
     for(i=0; i<row; i++)
 	    for(j=0; j<col*3; j++)
-	         fscanf(f_in, "%c", &img_i[i][j]);
+	         fscanf(f_in, "%c", &img_c[i][j]);
 
 	//RBG -> YCbCr
 	for(i=0; i<row; i++)
