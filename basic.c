@@ -126,11 +126,11 @@ int main (int argc, char **argv)
 
 
 	fprintf(f_out, "%s\n", img_type);
-    fprintf(f_out, "%d %d\n", &row, &col);
-    fprintf(f_out, "%d\n", &char_val); 
+    fprintf(f_out, "%d %d\n", row, col);
+    fprintf(f_out, "%d\n", char_val); 
 	for(i=0; i<row; i++)
 	    for(j=0; j<col*3; j++)
-	         fprintf(f_out, "%c", &img_i[i][j]);
+	         fprintf(f_out, "%c", img_i[i][j]);
 
 	//DISCRETE COSINE TRANSFORM
 
