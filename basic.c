@@ -106,10 +106,10 @@ int main (int argc, char **argv)
     fscanf(f_in, "%d %d\n", &row, &col);
     fscanf(f_in, "%d\n", &char_val); 
 
-    int **img_r   = (char **)calloc(row, sizeof(char *));
-	int **img_g   = (char **)calloc(row, sizeof(char *));
-	int **img_b   = (char **)calloc(row, sizeof(char *));
-    char  **img_c   = (int **)calloc(row, sizeof(int *));
+    int **img_r   = (int **)calloc(row, sizeof(int *));
+	int **img_g   = (int **)calloc(row, sizeof(int *));
+	int **img_b   = (int **)calloc(row, sizeof(int *));
+    char  **img_c   = (char **)calloc(row, sizeof(char *));
     double **img_d = (double **)calloc(row, sizeof(double *));
     for(i=0; i<row; i++)
     {
