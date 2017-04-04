@@ -69,7 +69,7 @@ int main (int argc, char **argv)
 	FILE *f_out = fopen("output.ppm", "w");
 	char img_type[16];
 	int row, col, char_val;
-	int i, j;  
+	int i, j, k;  
 
 	//Quantization Matrix
 	char Q[64] = {
@@ -127,11 +127,11 @@ int main (int argc, char **argv)
 
 	//RBG -> YCbCr
 	for(i=0; i<row; i++)
-	    for(j=0; j<col*3; j+=3)
+	    for(j=0,k=0; j<col*3; j+=3,k++)
 	    {
-	    	img_r[i][j]   = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
-	    	img_g[i][j] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
-	    	img_b[i][j] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
+	    	img_r[i][k]   = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
+	    	img_g[i][k] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
+	    	img_b[i][k] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
 	    }	
 
 	//CENTER
