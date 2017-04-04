@@ -106,13 +106,17 @@ int main (int argc, char **argv)
     fscanf(f_in, "%d %d\n", &row, &col);
     fscanf(f_in, "%d\n", &char_val); 
 
-    char **img_c   = (char **)calloc(row, sizeof(char *));
-    int  **img_i   = (int **)calloc(row, sizeof(int *));
+    int **img_r   = (char **)calloc(row, sizeof(char *));
+	int **img_g   = (char **)calloc(row, sizeof(char *));
+	int **img_b   = (char **)calloc(row, sizeof(char *));
+    char  **img_c   = (int **)calloc(row, sizeof(int *));
     double **img_d = (double **)calloc(row, sizeof(double *));
     for(i=0; i<row; i++)
     {
-    	img_c[i] = (int *)calloc(col*3, sizeof(int));
-    	img_i[i] = (char *)calloc(col*3, sizeof(char));
+    	img_r[i] = (int *)calloc(col, sizeof(int));
+		img_g[i] = (int *)calloc(col, sizeof(int));
+		img_b[i] = (int *)calloc(col, sizeof(int));
+    	img_c[i] = (char *)calloc(col*3, sizeof(char));
     	img_d[i] = (double *)calloc(col*3, sizeof(double));
     }
 
@@ -125,23 +129,29 @@ int main (int argc, char **argv)
 	for(i=0; i<row; i++)
 	    for(j=0; j<col*3; j+=3)
 	    {
-	    	img_i[i][j]   = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
-	    	img_i[i][j+1] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
-	    	img_i[i][j+2] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
+	    	img_r[i][j]   = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
+	    	img_g[i][j] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
+	    	img_b[i][j] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
 	    }	
 
 	//CENTER
 	for(i=0; i<row; i++)
-	    for(j=0; j<col*3; j++)
-	    	img_i[i][j] -= 127;    
+	    for(j=0; j<col; j++){
+	    	img_r[i][j] -= 127;
+			img_g[i][j] -= 127;
+			img_b[i][j] -= 127;
+		}
 
 
 	fprintf(f_out, "%s\n", img_type);
     fprintf(f_out, "%d %d\n", row, col);
     fprintf(f_out, "%d\n", char_val); 
 	for(i=0; i<row; i++)
-	    for(j=0; j<col*3; j++)
-	         fprintf(f_out, "%c", img_i[i][j]);
+	    for(j=0; j<col; j++){
+	         fprintf(f_out, "%c", img_r[i][j]);
+	         fprintf(f_out, "%c", img_g[i][j]);
+	         fprintf(f_out, "%c", img_b[i][j]);
+		}
 
 	//DISCRETE COSINE TRANSFORM
 
