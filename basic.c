@@ -5,7 +5,7 @@
 #include <math.h>
 
 
-void Traverse(unsigned char *block, unsigned char *arr)
+void Traverse(char *block, char *arr)
 {
 	int count = 0;
 	int r = 0;
@@ -17,26 +17,26 @@ void Traverse(unsigned char *block, unsigned char *arr)
 		if(c < 7)
 		{
 			//MOVE RIGHT
-			arr[count++] = block[r*8 + (c++)];
+			arr[count++] = block[r*8+(c++)];
 
 			//ALGORITHM ALWAYS ENDS HERE
 			if(count == 64)
 				break;
 		}
 		else
-			arr[count++] = block[(r++)*8 + c];
+			arr[count++] = block[(r++)*8+c];
 		//MOVE DOWN AND LEFT
 		while((r<7) && (c>0))
-		    arr[count++] = block[(r++)*8 + (c--)];
+		    arr[count++] = block[(r++)*8+(c--)];
 
 		//SECOND HALF OF TRAVERSE
 		if(r < 7) //MOVE DOWN
-			arr[count++] = block[(r++)*8 + c];
+			arr[count++] = block[(r++)*8+c];
 		else //MOVE RIGHT
-			arr[count++] = block[r*8 + (c++)];
+			arr[count++] = block[r*8+(c++)];
 		//MOVE UP AND RIGHT
 		while((r>0) && (c<7))
-			arr[count++] = block[(r--)*8 + (c++)];
+			arr[count++] = block[(r--)*8+(c++)];
 	}
 }
 
@@ -54,34 +54,30 @@ int main (int argc, char **argv)
 	int row, col, char_val, orig_row, orig_col;
 	int i, j, k, x, y;
 
+  char *trav_arr_qy = (char *)calloc(64, sizeof(char));
+	char *trav_arr_qcb = (char *)calloc(64, sizeof(char));
+	char *trav_arr_qcr = (char *)calloc(64, sizeof(char));
+
+
 	//Quantization Matrix
-	unsigned char Q[64] = {	16,  11,  10,  16,  24,  40,  51,  61,
-									12,  12,  14,  19,  26,  58,  60,  55,
-									14,  13,  16,  24,  40,  57,  69,  56,
-									14,  17,  22,  29,  51,  87,  80,  62,
-									18,  22,  37,  56,  68, 109, 103,  77,
-									24,  35,  55,  64,  81, 104, 113,  92,
-									49,  64,  78,  87, 103, 121, 120, 101,
-									72,  92,  95,  98, 112, 100, 103,  99};
+	unsigned char Q[8][8] = {	16,  11,  10,  16,  24,  40,  51,  61,
+	 													12,  12,  14,  19,  26,  58,  60,  55,
+														14,  13,  16,  24,  40,  57,  69,  56,
+														14,  17,  22,  29,  51,  87,  80,  62,
+														18,  22,  37,  56,  68, 109, 103,  77,
+														24,  35,  55,  64,  81, 104, 113,  92,
+														49,  64,  78,  87, 103, 121, 120, 101,
+														72,  92,  95,  98, 112, 100, 103,  99};
 
-	double DCT[64] =  {         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,          sqrt(2)/4,
-		    	         		 cos(M_PI/16)/2,  cos(3*M_PI/16)/2,  cos(5*M_PI/16)/2,  cos(7*M_PI/16)/2,  cos(9*M_PI/16)/2, cos(11*M_PI/16)/2, cos(13*M_PI/16)/2,  cos(15*M_PI/16)/2,
-	                   cos(2*M_PI/16)/2,  cos(6*M_PI/16)/2, cos(10*M_PI/16)/2, cos(14*M_PI/16)/2, cos(18*M_PI/16)/2, cos(22*M_PI/16)/2, cos(26*M_PI/16)/2,  cos(30*M_PI/16)/2,
-	                   cos(3*M_PI/16)/2,  cos(9*M_PI/16)/2, cos(15*M_PI/16)/2, cos(21*M_PI/16)/2, cos(27*M_PI/16)/2, cos(33*M_PI/16)/2, cos(39*M_PI/16)/2,  cos(45*M_PI/16)/2,
-	                   cos(4*M_PI/16)/2, cos(12*M_PI/16)/2, cos(20*M_PI/16)/2, cos(28*M_PI/16)/2, cos(36*M_PI/16)/2, cos(44*M_PI/16)/2, cos(52*M_PI/16)/2,  cos(60*M_PI/16)/2,
-	                   cos(5*M_PI/16)/2, cos(15*M_PI/16)/2, cos(25*M_PI/16)/2, cos(35*M_PI/16)/2, cos(45*M_PI/16)/2, cos(55*M_PI/16)/2, cos(65*M_PI/16)/2,  cos(75*M_PI/16)/2,
-	                   cos(6*M_PI/16)/2, cos(18*M_PI/16)/2, cos(30*M_PI/16)/2, cos(42*M_PI/16)/2, cos(54*M_PI/16)/2, cos(66*M_PI/16)/2, cos(78*M_PI/16)/2,  cos(90*M_PI/16)/2,
-	                   cos(7*M_PI/16)/2, cos(21*M_PI/16)/2, cos(35*M_PI/16)/2, cos(49*M_PI/16)/2, cos(63*M_PI/16)/2, cos(77*M_PI/16)/2, cos(91*M_PI/16)/2, cos(105*M_PI/16)/2};
+	double DCT[8][8] =  {       sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,         sqrt(2)/4,          sqrt(2)/4,
+		    	         		   cos(M_PI/16)/2,  cos(3*M_PI/16)/2,  cos(5*M_PI/16)/2,  cos(7*M_PI/16)/2,  cos(9*M_PI/16)/2, cos(11*M_PI/16)/2, cos(13*M_PI/16)/2,  cos(15*M_PI/16)/2,
+	                     cos(2*M_PI/16)/2,  cos(6*M_PI/16)/2, cos(10*M_PI/16)/2, cos(14*M_PI/16)/2, cos(18*M_PI/16)/2, cos(22*M_PI/16)/2, cos(26*M_PI/16)/2,  cos(30*M_PI/16)/2,
+	                     cos(3*M_PI/16)/2,  cos(9*M_PI/16)/2, cos(15*M_PI/16)/2, cos(21*M_PI/16)/2, cos(27*M_PI/16)/2, cos(33*M_PI/16)/2, cos(39*M_PI/16)/2,  cos(45*M_PI/16)/2,
+	                     cos(4*M_PI/16)/2, cos(12*M_PI/16)/2, cos(20*M_PI/16)/2, cos(28*M_PI/16)/2, cos(36*M_PI/16)/2, cos(44*M_PI/16)/2, cos(52*M_PI/16)/2,  cos(60*M_PI/16)/2,
+	                     cos(5*M_PI/16)/2, cos(15*M_PI/16)/2, cos(25*M_PI/16)/2, cos(35*M_PI/16)/2, cos(45*M_PI/16)/2, cos(55*M_PI/16)/2, cos(65*M_PI/16)/2,  cos(75*M_PI/16)/2,
+	                     cos(6*M_PI/16)/2, cos(18*M_PI/16)/2, cos(30*M_PI/16)/2, cos(42*M_PI/16)/2, cos(54*M_PI/16)/2, cos(66*M_PI/16)/2, cos(78*M_PI/16)/2,  cos(90*M_PI/16)/2,
+	                     cos(7*M_PI/16)/2, cos(21*M_PI/16)/2, cos(35*M_PI/16)/2, cos(49*M_PI/16)/2, cos(63*M_PI/16)/2, cos(77*M_PI/16)/2, cos(91*M_PI/16)/2, cos(105*M_PI/16)/2};
 
-	unsigned char *A = (char *)calloc(64, sizeof(char));
-	unsigned char *B = (char *)calloc(64, sizeof(char));
-
-	//memcpy(A, test, 64*sizeof(char));
-
-	//Traverse(A, B);
-
-	//for(i=0; i<64; i++)
-	//	printf("B[%d] = (%d).\n", i, (int)B[i]);
 
 	  fscanf(f_in, "%s\n", img_type);
     fscanf(f_in, "%d %d\n", &orig_row, &orig_col);
@@ -99,10 +95,13 @@ int main (int argc, char **argv)
     double **img_dy = (double **)calloc(row, sizeof(double *));
 		double **img_dcb = (double **)calloc(row, sizeof(double *));
 		double **img_dcr = (double **)calloc(row, sizeof(double *));
-		// quantization matrices
-		unsigned char **img_qy = (unsigned char **)calloc(row, sizeof(char *));
-		unsigned char **img_qcb = (unsigned char **)calloc(row, sizeof(char *));
-		unsigned char **img_qcr = (unsigned char **)calloc(row, sizeof(char *));
+		// quantization matrices (1D)
+		char *img_qy = (char *)calloc(row*col, sizeof(char));
+		char *img_qcb = (char *)calloc(row*col, sizeof(char));
+		char *img_qcr = (char *)calloc(row*col, sizeof(char));
+		// rearranged matrix for huffman (1D)
+		char *huff = (char *)calloc(row*col*3, sizeof(char));
+
     for(i=0; i<row; i++)
     {
     	img_c[i] = (unsigned char *)calloc(col*3, sizeof(char));
@@ -112,9 +111,6 @@ int main (int argc, char **argv)
     	img_dy[i] = (double *)calloc(col, sizeof(double));
 			img_dcb[i] = (double *)calloc(col, sizeof(double));
 			img_dcr[i] = (double *)calloc(col, sizeof(double));
-			img_qy[i] = (unsigned char *)calloc(col, sizeof(char));
-			img_qcb[i] = (unsigned char *)calloc(col, sizeof(char));
-			img_qcr[i] = (unsigned char *)calloc(col, sizeof(char));
     }
 
     //READ IMAGE
@@ -122,6 +118,7 @@ int main (int argc, char **argv)
 	    for(j=0; j<col*3; j++)
 	         fscanf(f_in, "%c", &img_c[i][j]);
 
+	printf("file read in\n");
 	//RBG -> YCbCr
 	for(i=0; i<row; i++)
 	    for(j=0,k=0; j<col*3; j+=3,k++)
@@ -138,8 +135,10 @@ int main (int argc, char **argv)
 			  img_cb[i][j] -= 127;
 			  img_cr[i][j] -= 127;
 		}
+		printf("converted to YCbCr\n");
 
 	int m,n;
+	int counter = 0;
 	for(m=0; m<row; m+=8){
 		for(n=0; n<col; n+=8){
 			  // Discrete Cosine Transform
@@ -153,7 +152,7 @@ int main (int argc, char **argv)
 			            for (y = 0; y < 8; y++) {
 										temp_y += cos((2*x+1)*i*M_PI/16) * cos((2*y+1)*j*M_PI/16) * img_y[m+x][n+y];
 										temp_cb += cos((2*x+1)*i*M_PI/16) * cos((2*y+1)*j*M_PI/16) * img_cb[m+x][n+y];
-										temp_cr += cos((2*x+1)*i*M_PI/16) * cos((2*y+1)*j*M_PI/16) * img_cr[m+x][yn+];
+										temp_cr += cos((2*x+1)*i*M_PI/16) * cos((2*y+1)*j*M_PI/16) * img_cr[m+x][y+n];
 	 								}
 							}
 							if(i==0){
@@ -173,28 +172,63 @@ int main (int argc, char **argv)
 			        img_dy[m+i][n+j] = temp_y;
 							img_dcb[m+i][n+j] = temp_cb;
 							img_dcr[m+i][n+j] = temp_cr;
-							//Quantization
-							img_qy[m+i][n+j] = (unsigned char)(img_dy[m+i][n+j]/Q[i][j]);
-							img_qcb[m+i][n+j] = (unsigned char)(img_dcb[m+i][n+j]/Q[i][j]);
-							img_qcr[m+i][n+j] = (unsigned char)(img_dcr[m+i][n+j]/Q[i][j]);
 						}
 			    }
-			  }
-			}
-	fprintf(f_out, "%s\n", img_type);
-    fprintf(f_out, "%d %d\n", row, col);
-    fprintf(f_out, "%d\n", char_val);
-	for(i=0; i<row; i++)
-	    for(j=0; j<col; j++){
-	         fprintf(f_out, "%c", img_r[i][j]);
-	         fprintf(f_out, "%c", img_g[i][j]);
-	         fprintf(f_out, "%c", img_b[i][j]);
+				// Quantization (inside the m and n loops)
+				for (i = 0; i < 8; i++) {
+						for (j = 0; j < 8; j++) {
+							  img_qy[(m+i)*row + (n+j)] = (char)rint((img_dy[m+i][n+j]/Q[i][j]));
+								img_qcb[(m+i)*row +(n+j)] = (char)rint((img_dcb[m+i][n+j]/Q[i][j]));
+								img_qcr[(m+i)*row +(n+j)] = (char)rint((img_dcr[m+i][n+j]/Q[i][j]));
+						}
+				}
+				//printf("DCT %d\n", counter);
+
+				Traverse(img_qy+(m*row+n), trav_arr_qy);
+				Traverse(img_qcb+(m*row+n), trav_arr_qcb);
+				Traverse(img_qcr+(m*row+n), trav_arr_qcr);
+				int c;
+				for(c=0; c<64; c++, counter++)
+				{
+				   huff[counter] = trav_arr_qy[c];
+					 huff[col*row+counter] = trav_arr_qcb[c];
+					 huff[col*row*2+counter] = trav_arr_qcr[c];
+				}
+		 }
+	}
+
+	printf("DCT and quant done\n");
+
+	printf("After quantization:\n");
+	for(i=504;i<512;i++){
+		for(j=504;j<512;j++){
+				printf("%4d",img_qy[i*row+j]);
 		}
+		printf("\n");
+	}
+	printf("\n");
+	printf("\n");
+	printf("After rearranging:");
+  printf("\n");
+	for(i=504;i<512;i++){
+		for(j=504;j<512;j++){
+			printf("%4d",huff[i*row+j]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+	printf("\n");
 
-	//DISCRETE COSINE TRANSFORM
+	printf("trav_arr_qy:\n");
+	for(i=0;i<64;i++){
+		if(i%8 == 0)
+			printf("\n");
+		printf("%4d",trav_arr_qy[i]);
+	}
+	printf("\n");
+	printf("\n");
 
-
-
+	//reorder each 8x8 block and put all 3 matrices back into 1 big matrix
 
 	return 0;
 }
