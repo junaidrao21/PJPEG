@@ -278,9 +278,9 @@ int main (int argc, char **argv)
 			for (i=0; i<8; i++)
 				for (j=0; j<8; j++)
 				{
-							img_dy[(m+i)*row + (n+j)] = (char)rint((img_qy[(m+i)*row + (n+j)]*Q[i][j]));
-							img_dcb[(m+i)*row +(n+j)] = (char)rint((img_qcb[(m+i)*row + (n+j)]*Q[i][j]));
-							img_dcr[(m+i)*row +(n+j)] = (char)rint((img_qcr[(m+i)*row + (n+j)]*Q[i][j]));
+							img_dy[m+i][n+j] = rint((img_qy[(m+i)*row + (n+j)]*Q[i][j]));
+							img_dcb[m+i][n+j] = rint((img_qcb[(m+i)*row + (n+j)]*Q[i][j]));
+							img_dcr[m+i][n+j] = rint((img_qcr[(m+i)*row + (n+j)]*Q[i][j]));
 				}
 
 	//Inverse Discrete Cosine Transform
@@ -341,7 +341,7 @@ int main (int argc, char **argv)
 	fprintf(f_out, "%d\n", char_val);
 	for(m=0; m<row; m++)
 		for(n=0; n<col*3; n++)
-			fprintf(f_out, "%c", img_c[m*row+n]);
+			fprintf(f_out, "%c", img_c[m][n]);
 
 	//Clean up
 	fclose(f_in);
