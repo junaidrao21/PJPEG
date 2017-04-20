@@ -14,7 +14,7 @@
 #include "functions.h"
 
 
-int main(int argc, char **argv){
+int lab4(char *cd, char *file_in, char *file_out){
 	char *fileName = NULL, *fileOut = NULL;
 	FILE *fin,*fout;
 	float diff;
@@ -26,24 +26,29 @@ int main(int argc, char **argv){
 
 
 	// Argument Processing
-	if (argc != 4){
-			printf("Usage: lab2 -c <file to compress>   <output file name>\n");
-			printf("       lab2 -d <file to decompress> <output file name>\n");
-			exit(1);
-	}
+	// if (argc != 4){
+	// 		printf("Usage: lab2 -c <file to compress>   <output file name>\n");
+	// 		printf("       lab2 -d <file to decompress> <output file name>\n");
+	// 		exit(1);
+	// }
 
-	i = getopt(argc, argv, "c:d");
+	if(strcmp(cd,"c") == 0)
+		i = 'c';
+	else if(strcmp(cd, "d") == 0)
+		i = 'd';
+	else
+		i = '?';
 
 		switch (i){
 			case 'c':
 				comp = 1;
-				fileName = argv[2];
-				fileOut  = argv[3];
+				fileName = file_in;
+				fileOut  = file_out;
 				break;
 			case 'd':
 				decomp = 1;
-				fileName = argv[2];
-				fileOut  = argv[3];
+				fileName = file_in;
+				fileOut  = file_out;
 				break;
 			case '?':
 				if (isprint(optopt))
@@ -74,7 +79,7 @@ int main(int argc, char **argv){
 
 	// Compression
 	if (comp == 1){
-		printf("Compressing %s\n",fileName);
+		//printf("Compressing %s\n",fileName);
 
 		// Find Frequencies
 		occurances = get_frequencies(fin);
@@ -113,17 +118,17 @@ int main(int argc, char **argv){
 
 		// Print Compression Info
 		csize = ftell(fout);
-		printf("Original Size   = %d\n",fsize);
-		printf("Compressed Size = %d\n",csize);
+		//printf("Original Size   = %d\n",fsize);
+		//printf("Compressed Size = %d\n",csize);
 		diff = (((float)(csize-fsize))/(float)(fsize))*100;
-		printf("%.2f%% Compression\n",diff);
+		//printf("%.2f%% Compression\n",diff);
 	}
 
 
 
 	// Decompression
 	else if (decomp == 1){
-		printf("Decompressing %s\n",fileName);
+		//printf("Decompressing %s\n",fileName);
 
 
 		//int original_fsize;
@@ -171,7 +176,7 @@ int main(int argc, char **argv){
 	fclose(fin);
 	fclose(fout);
 
-	
+
 
 
 	return 0;
