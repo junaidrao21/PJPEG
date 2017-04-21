@@ -11,8 +11,8 @@
 			if (v==0) Cv = 1/sqrt(2); else Cv = 1.0;}
 
 //Function prototypes
-void Traverse(char *block, char *arr, int row);
-void Inverse(char *block, char *arr, int row);
+void Traverse(char *block, char *arr, int col);
+void Inverse(char *block, char *arr, int col);
 
 
 int main (int argc, char **argv)
@@ -67,27 +67,43 @@ int main (int argc, char **argv)
 	fscanf(f_in, "%d %d\n", &orig_col, &orig_row);
 	fscanf(f_in, "%d\n", &char_val);
 
+
+	// If greyscale, say it doesn't work and exit
+	if(strcmp(img_type,"P5") == 0){
+		printf("This program does not currently work on greyscale (P5) images.\nChoose a color ppm image (P6).\n");
+		exit(1);
+	}
+	else if(strcmp(img_type,"P6") != 0){
+		printf("This image is not a color ppm (P6) image. Try again with a P6 image.\n");
+		exit(1);
+	}
+
 	//Pad row and col if necessary
-	col = orig_col + (orig_col % 8);
-	row = orig_row + (orig_row % 8);
+	col = orig_col;
+	row = orig_row;
+	if(orig_col % 8 != 0)
+	col = orig_col + (8-(orig_col % 8));
+	if(orig_row % 8 != 0)
+	row = orig_row + (8-(orig_row % 8));
+	printf("%d %d\n",col, row);
 
 	//Full RGB matrix
-	unsigned char **img_c = (unsigned char **)calloc(row, sizeof(unsigned char *));
+	unsigned char *img_c = (unsigned char *)calloc(row*col*3, sizeof(unsigned char));
 
 	//Separate YCbCr matrices
-	int **img_y  = (int **)calloc(row, sizeof(int *));
-	int **img_cb = (int **)calloc(row, sizeof(int *));
-	int **img_cr = (int **)calloc(row, sizeof(int *));
+	int *img_y  = (int *)calloc(row*col*2, sizeof(int));
+	int *img_cb = (int *)calloc(row*col*2, sizeof(int));
+	int *img_cr = (int *)calloc(row*col*2, sizeof(int));
 
 	//Discrete cosine transform matrices
-	double **img_dy  = (double **)calloc(row, sizeof(double *));
-	double **img_dcb = (double **)calloc(row, sizeof(double *));
-	double **img_dcr = (double **)calloc(row, sizeof(double *));
+	double *img_dy  = (double *)calloc(row*col*2, sizeof(double));
+	double *img_dcb = (double *)calloc(row*col*2, sizeof(double));
+	double *img_dcr = (double *)calloc(row*col*2, sizeof(double));
 
 	//Quantization matrices (1D)
-	char *img_qy  = (char *)calloc(row*col, sizeof(char));
-	char *img_qcb = (char *)calloc(row*col, sizeof(char));
-	char *img_qcr = (char *)calloc(row*col, sizeof(char));
+	char *img_qy  = (char *)calloc(row*col*2, sizeof(char));
+	char *img_qcb = (char *)calloc(row*col*2, sizeof(char));
+	char *img_qcr = (char *)calloc(row*col*2, sizeof(char));
 
 	//Temp arrays for Traverse()
 	char *trav_arr_qy  = (char *)calloc(64, sizeof(char));
@@ -102,55 +118,43 @@ int main (int argc, char **argv)
 	//Rearranged matrix for huffman (1D)
 	char *huff = (char *)calloc(row*col*3, sizeof(char));
 
-	//Allocate 2D arrays
-	for(i=0; i<row; i++)
-	{
-		img_c[i]   = (unsigned char *)calloc(col*3, sizeof(unsigned char));
-	  img_y[i]   = (int *)calloc(col, sizeof(int));
-		img_cb[i]  = (int *)calloc(col, sizeof(int));
-		img_cr[i]  = (int *)calloc(col, sizeof(int));
-		img_dy[i]  = (double *)calloc(col, sizeof(double));
-		img_dcb[i] = (double *)calloc(col, sizeof(double));
-		img_dcr[i] = (double *)calloc(col, sizeof(double));
-	}
-
 	//Read in pixel data
 	for(i=0; i<orig_row; i++)
 		for(j=0; j<orig_col*3; j++)
-			fscanf(f_in, "%c", &img_c[i][j]);
+			fscanf(f_in, "%c", &img_c[i*col*3 + j]);
 
-	// printf("RGB[0][0]\n");
-	// printf("%8d %8d %8d\n",img_c[0][0], img_c[0][1], img_c[0][2]);
+	// for(m=0;m<64;m++){
+	// 	if(m%8==0)
+	// 		printf("\n");
+	// 	printf("%6d",img_c[m]);
+	// }
 
-	//RBG -> YCbCr
+		//RBG -> YCbCr
 	gettimeofday(&startrgb, NULL);
 	for(i=0; i<row; i++)
 		for(j=0,k=0; j<col*3; j+=3,k++)
 		{
-			img_y[i][k]  = (0.299)*img_c[i][j] + (0.587)*img_c[i][j+1] + (0.114)*img_c[i][j+2];
-		  img_cb[i][k] = 128 - (0.168736)*img_c[i][j] - (0.331264)*img_c[i][j+1] + (0.5)*img_c[i][j+2];
-		  img_cr[i][k] = 128 + (0.5)*img_c[i][j] - (0.418688)*img_c[i][j+1] - (0.081312)*img_c[i][j+2];
+			img_y[i * col + k]  = (0.299)*img_c[i*col*3 + j] + (0.587)*img_c[i*col*3 + (j+1)] + (0.114)*img_c[i*col*3 + (j+2)];
+		  img_cb[i * col + k] = 128 - (0.168736)*img_c[i*col*3 + j] - (0.331264)*img_c[i*col*3 + (j+1)] + (0.5)*img_c[i*col*3 + (j+2)];
+		  img_cr[i * col + k] = 128 + (0.5)*img_c[i*col*3 + j] - (0.418688)*img_c[i*col*3 + (j+1)] - (0.081312)*img_c[i*col*3 + (j+2)];
 		}
 
-	// printf("YCbCr[0][0]\n");
-	// printf("%8d %8d %8d\n",img_y[0][0], img_cb[0][0], img_cr[0][0]);
-
-	//Center
-	for(i=0; i<row; i++)		// for the padded 0's does this mess anything up?
+		//Center
+	for(i=0; i<row; i++)
 		for(j=0; j<col; j++)
 		{
-			img_y[i][j]  -= 128;
-			img_cb[i][j] -= 128;
-			img_cr[i][j] -= 128;
+			img_y[i * col + j]  -= 128;
+			img_cb[i * col + j] -= 128;
+			img_cr[i * col + j] -= 128;
 		}
 	gettimeofday(&endrgb, NULL);
 
 	printf("Before DCT\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%4d", img_cr[m][n]);
-		printf("\n");
-	}
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%4d", img_cr[m*col+n]);
+	// 	printf("\n");
+	// }
 
 	//Discrete Cosine Transform
 	gettimeofday(&startdct, NULL);
@@ -166,22 +170,22 @@ int main (int argc, char **argv)
 					temp_dctcr[i*8+j] = 0;
 					for(x = 0; x < 8; x++)
 					{
-						temp_dcty[i*8+j] += DCT[i][x] * (double)img_y[m+x][n+j];
-						temp_dctcb[i*8+j] += DCT[i][x] * (double)img_cb[m+x][n+j];
-						temp_dctcr[i*8+j] += DCT[i][x] * (double)img_cr[m+x][n+j];
+						temp_dcty[i*8+j] += DCT[i][x] * (double)img_y[(m+x) * col + (n+j)];
+						temp_dctcb[i*8+j] += DCT[i][x] * (double)img_cb[(m+x) * col + (n+j)];
+						temp_dctcr[i*8+j] += DCT[i][x] * (double)img_cr[(m+x) * col + (n+j)];
 					}
 				}
 			for(i = 0; i < 8; i++)
 				for(j = 0; j < 8; j++)
 				{
-					img_dy[m+i][n+j] = 0;
-					img_dcb[m+i][n+j] = 0;
-					img_dcr[m+i][n+j] = 0;
+					img_dy[(m+i) * col + (n+j)] = 0;
+					img_dcb[(m+i) * col + (n+j)] = 0;
+					img_dcr[(m+i) * col + (n+j)] = 0;
 					for(x = 0; x < 8; x++)
 					{
-						img_dy[m+i][n+j] += temp_dcty[i*8+x] * DCT[j][x];
-						img_dcb[m+i][n+j] += temp_dctcb[i*8+x] * DCT[j][x];
-						img_dcr[m+i][n+j] += temp_dctcr[i*8+x] * DCT[j][x];
+						img_dy[(m+i) * col + (n+j)] += temp_dcty[i*8+x] * DCT[j][x];
+						img_dcb[(m+i) * col + (n+j)] += temp_dctcb[i*8+x] * DCT[j][x];
+						img_dcr[(m+i) * col + (n+j)] += temp_dctcr[i*8+x] * DCT[j][x];
 					}
 				}
 		}
@@ -189,11 +193,11 @@ int main (int argc, char **argv)
 	gettimeofday(&enddct, NULL);
 
 	printf("After DCT\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%6.2f", img_dcr[m][n]);
-		printf("\n");
-	}
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%6.2f", img_dcr[m*col+n]);
+	// 	printf("\n");
+	// }
 
 	//Quantization
 	gettimeofday(&startquant, NULL);
@@ -202,28 +206,32 @@ int main (int argc, char **argv)
 			for(i=0; i<8; i++)
 				for(j=0; j<8; j++)
 				{
-					img_qy[(m+i)*row + (n+j)]  = (char)rint((img_dy[m+i][n+j]/Q[i][j]));
-					img_qcb[(m+i)*row + (n+j)] = (char)rint((img_dcb[m+i][n+j]/Q[i][j]));
-					img_qcr[(m+i)*row + (n+j)] = (char)rint((img_dcr[m+i][n+j]/Q[i][j]));
+					img_qy[(m+i) * col + (n+j)]  = (char)rint((img_dy[(m+i)*col + (n+j)]/Q[i][j]));
+					img_qcb[(m+i) * col + (n+j)] = (char)rint((img_dcb[(m+i)*col + (n+j)]/Q[i][j]));
+					img_qcr[(m+i) * col + (n+j)] = (char)rint((img_dcr[(m+i)*col + (n+j)]/Q[i][j]));
 				}
 	gettimeofday(&endquant, NULL);
 
 	printf("After Quant\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%6d", img_qcr[m*row+n]);
-		printf("\n");
-	}
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%6d", img_qcr[m*row+n]);
+	// 	printf("\n");
+	// }
 
 	//Linearization of each 8x8 block before compression
+	int count = 1;
+	printf("img_qcr: start = (%p)\n", &img_qcr[row*col-1]);
 	for(m=0; m<row; m+=8)
 		for(n=0; n<col; n+=8)
 		{
 			//Linearization
-			Traverse(img_qy+(m*row+n), trav_arr_qy, row);
-			Traverse(img_qcb+(m*row+n), trav_arr_qcb, row);
-			Traverse(img_qcr+(m*row+n), trav_arr_qcr, row);
-
+			Traverse(img_qy+(m*col+n), trav_arr_qy, col);
+			Traverse(img_qcb+(m*col+n), trav_arr_qcb, col);
+			Traverse(img_qcr+(m*col+n), trav_arr_qcr, col);
+			// printf("%d   ",count);
+			// printf("%d\n", img_qcr[m*col+n]);
+			count++;
 			//Combination into single Huffman array
 			for(c=0; c<64; c++, counter++)
 			{
@@ -234,12 +242,12 @@ int main (int argc, char **argv)
 		}
 
 	printf("After Traverse");
-	for(m=row*col*2;m<row*col*2+64;m++){
-		if(m%8 == 0)
-			printf("\n");
-		printf("%6d", huff[m]);
-	}
-	printf("\n");
+	// for(m=row*col*2;m<row*col*2+64;m++){
+	// 	if(m%8 == 0)
+	// 		printf("\n");
+	// 	printf("%6d", huff[m]);
+	// }
+	// printf("\n");
 
 	//Write out combined matrix to "output.ppm"
 	fprintf(f_out, "%s\n", img_type);
@@ -253,7 +261,6 @@ int main (int argc, char **argv)
 
 	//Huffman Compression
 	gettimeofday(&starthuff, NULL);
-	//system("./huff -c output.ppm output.ppm.huf");
 	lab4("c", "output.ppm", "output.ppm.huf");
 	gettimeofday(&endhuff, NULL);
 
@@ -270,7 +277,7 @@ int main (int argc, char **argv)
 
 
 	gettimeofday(&startdectot, NULL);
-	//printf("Decompressing...\n");
+	printf("Decompressing...\n");
 
 	//Huffman Decompression
 	gettimeofday(&startihuff, NULL);
@@ -295,45 +302,51 @@ int main (int argc, char **argv)
 	fscanf(g_in, "%d %d\n", &orig_col, &orig_row);
 	fscanf(g_in, "%d\n", &char_val);
 
-	col = orig_col + (orig_col % 8);
-	row = orig_row + (orig_row % 8);
+	//Pad row and col if necessary
+	col = orig_col;
+	row = orig_row;
+	if(orig_col % 8 != 0)
+	col = orig_col + (8-(orig_col % 8));
+	if(orig_row % 8 != 0)
+	row = orig_row + (8-(orig_row % 8));
+	printf("%d %d\n",col, row);
 
 
 	//Prepare huffman array
 	memset(huff, 0, row*col*3*sizeof(char));
 
-	//printf("Reading in file\n");
+	printf("Reading in file\n");
 	//Read in file contents
 	for(m=0; m<row*col*3; m++)
 			fscanf(g_in, "%c", &huff[m]);
 
 	printf("Before ITraverse");
-	for(m=row*col*2;m<row*col*2+64;m++){
-		if(m%8 == 0)
-			printf("\n");
-		printf("%6d", huff[m]);
-	}
-	printf("\n");
+	// for(m=row*col*2;m<row*col*2+64;m++){
+	// 	if(m%8 == 0)
+	// 		printf("\n");
+	// 	printf("%6d", huff[m]);
+	// }
+	// printf("\n");
 
-	//printf("Reverse Linear\n");
+	printf("Reverse Linear\n");
 	//Reverse the linearization
 	counter = 0;
 	for(i=0; i<3; i++)
 		for(m=0; m<row; m+=8)
 			for(n=0; n<col; n+=8, counter++)
 				if(i==0)
-					Inverse(&img_qy[m * row + n], (huff + counter*64), row);
+					Inverse(&img_qy[m * col + n], (huff + counter*64), col);
 				else if(i==1)
-					Inverse(&img_qcb[m * row + n], (huff + counter*64), row);
+					Inverse(&img_qcb[m * col + n], (huff + counter*64), col);
 				else
-					Inverse(&img_qcr[m * row + n], (huff + counter*64), row);
+					Inverse(&img_qcr[m * col + n], (huff + counter*64), col);
 
 	printf("Before IQuant\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%6d", img_qcr[m*row+n]);
-		printf("\n");
-	}
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%6d", img_qcr[m*row+n]);
+	// 	printf("\n");
+	// }
 
 	//printf("IQuant\n");
 	gettimeofday(&startiquant, NULL);
@@ -343,18 +356,18 @@ int main (int argc, char **argv)
 			for (i=0; i<8; i++)
 				for (j=0; j<8; j++)
 				{
-							img_dy[m+i][n+j] = (img_qy[(m+i)*row + (n+j)]*Q[i][j]);
-							img_dcb[m+i][n+j] = (img_qcb[(m+i)*row + (n+j)]*Q[i][j]);
-							img_dcr[m+i][n+j] = (img_qcr[(m+i)*row + (n+j)]*Q[i][j]);
+							img_dy[(m+i)*col + (n+j)] = (img_qy[(m+i)*col + (n+j)]*Q[i][j]);
+							img_dcb[(m+i)*col + (n+j)] = (img_qcb[(m+i)*col + (n+j)]*Q[i][j]);
+							img_dcr[(m+i)*col + (n+j)] = (img_qcr[(m+i)*col + (n+j)]*Q[i][j]);
 				}
 gettimeofday(&endiquant, NULL);
 
-	printf("Before IDCT\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%6.2f", img_dcr[m][n]);
-		printf("\n");
-	}
+	// printf("Before IDCT\n");
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%6.2f", img_dcr[m*col+n]);
+	// 	printf("\n");
+	// }
 
 gettimeofday(&startidct, NULL);
 	// IDCT
@@ -369,42 +382,42 @@ gettimeofday(&startidct, NULL);
 					temp_dctcr[i*8+j] = 0;
 					for(x = 0; x < 8; x++)
 					{
-						temp_dcty[i*8+j] += IDCT[i][x] * img_dy[m+x][n+j];
-						temp_dctcb[i*8+j] += IDCT[i][x] * img_dcb[m+x][n+j];
-						temp_dctcr[i*8+j] += IDCT[i][x] * img_dcr[m+x][n+j];
+						temp_dcty[i*8+j] += IDCT[i][x] * img_dy[(m+x)*col + (n+j)];
+						temp_dctcb[i*8+j] += IDCT[i][x] * img_dcb[(m+x)*col + (n+j)];
+						temp_dctcr[i*8+j] += IDCT[i][x] * img_dcr[(m+x)*col + (n+j)];
 					}
 				}
 			for(i = 0; i < 8; i++)
 				for(j = 0; j < 8; j++)
 				{
-					img_y[m+i][n+j] = 0;
-					img_cb[m+i][n+j] = 0;
-					img_cr[m+i][n+j] = 0;
+					img_y[(m+i) * col + (n+j)] = 0;
+					img_cb[(m+i) * col + (n+j)] = 0;
+					img_cr[(m+i) * col + (n+j)] = 0;
 					for(x = 0; x < 8; x++)
 					{
-						img_y[m+i][n+j] += (int)(temp_dcty[i*8+x] * IDCT[j][x]);
-						img_cb[m+i][n+j] += (int)(temp_dctcb[i*8+x] * IDCT[j][x]);
-						img_cr[m+i][n+j] += (int)(temp_dctcr[i*8+x] * IDCT[j][x]);
+						img_y[(m+i) * col + (n+j)] += (int)(temp_dcty[i*8+x] * IDCT[j][x]);
+						img_cb[(m+i) * col + (n+j)] += (int)(temp_dctcb[i*8+x] * IDCT[j][x]);
+						img_cr[(m+i) * col + (n+j)] += (int)(temp_dctcr[i*8+x] * IDCT[j][x]);
 					}
 				}
 		}
 gettimeofday(&endidct, NULL);
 
-	printf("After IDCT\n");
-	for(m=0;m<8;m++){
-		for(n=0;n<8;n++)
-			printf("%6d", img_cr[m][n]);
-		printf("\n");
-	}
+	// printf("After IDCT\n");
+	// for(m=0;m<8;m++){
+	// 	for(n=0;n<8;n++)
+	// 		printf("%6d", img_cr[m*col+n]);
+	// 	printf("\n");
+	// }
 
 gettimeofday(&startirgb, NULL);
 	//Un-Center
 	for(i=0; i<row; i++)
 		for(j=0; j<col; j++)
 		{
-			img_y[i][j]  += 128;
-			img_cb[i][j] += 128;
-			img_cr[i][j] += 128;
+			img_y[i * col + j]  += 128;
+			img_cb[i * col + j] += 128;
+			img_cr[i * col + j] += 128;
 		}
 		// printf("YCbCr[0][0]\n");
 		// printf("%8d %8d %8d\n",img_y[0][0], img_cb[0][0], img_cr[0][0]);
@@ -417,9 +430,9 @@ int tempr, tempg, tempb;
 	for(m=0; m<row; m++)
 		for(n=0, j=0; n<col; n++, j+=3)
 		{
-			tempr = (img_y[m][n] + 1.40200 * (img_cr[m][n] - 128));
-			tempg = (img_y[m][n] - 0.34414 * (img_cb[m][n] - 128) - 0.71414 * (img_cr[m][n] - 128));
-			tempb = (img_y[m][n] + 1.77200 * (img_cb[m][n] - 128));
+			tempr = (img_y[m * col + n] + 1.40200 * (img_cr[m * col + n] - 128));
+			tempg = (img_y[m * col + n] - 0.34414 * (img_cb[m * col + n] - 128) - 0.71414 * (img_cr[m * col + n] - 128));
+			tempb = (img_y[m * col + n] + 1.77200 * (img_cb[m * col + n] - 128));
 
 			if(tempr > 255)
 				tempr = 255;
@@ -434,9 +447,9 @@ int tempr, tempg, tempb;
 			if(tempb < 0)
 				tempb = 0;
 
-			img_c[m][j] = (unsigned char)tempr;
-			img_c[m][j+1] = (unsigned char)tempg;
-			img_c[m][j+2] = (unsigned char)tempb;
+			img_c[m*col*3 + j] = (unsigned char)tempr;
+			img_c[m*col*3 + (j+1)] = (unsigned char)tempg;
+			img_c[m*col*3 + (j+2)] = (unsigned char)tempb;
 		}
 		gettimeofday(&endirgb, NULL);
 
@@ -448,10 +461,15 @@ int tempr, tempg, tempb;
 	fprintf(g_out, "%s\n", img_type);
 	fprintf(g_out, "%d %d\n", orig_col, orig_row);
 	fprintf(g_out, "%d\n", char_val);
-	for(m=0; m<orig_row; m++){
-		for(n=0; n<orig_col*3; n++)
-			fprintf(g_out, "%c", img_c[m][n]);
-	}
+	for(i=0; i<orig_row; i++)
+		for(j=0; j<orig_col*3; j++)
+			fprintf(g_out, "%c", img_c[i*col*3 + j]);
+
+	// for(m=0;m<64;m++){
+	// 	if(m%8==0)
+	// 		printf("\n");
+	// 	printf("%6d",img_c[m]);
+	// }
 
 	//Clean up
 	fclose(g_in);
@@ -465,18 +483,8 @@ int tempr, tempg, tempb;
 	printf("IHuffman =   %6.3f\n", (double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec));
 	printf("Decom Tot =  %6.3f\n", (double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec));
 
-	// printf("freeing 2d memory\n");
+	// printf("freeing memory\n");
 	//Free allocated memory
-	for(i=0; i<row; i++)
-	{
-		free(img_c[i]);
-		free(img_y[i]);
-		free(img_cb[i]);
-		free(img_cr[i]);
-		free(img_dy[i]);
-		free(img_dcb[i]);
-		free(img_dcr[i]);
-	}
 	free(img_c);
 	free(img_y);
 	free(img_cb);
@@ -491,17 +499,17 @@ int tempr, tempg, tempb;
 	free(trav_arr_qcr);
 	free(huff);
 
-	system("rm output.ppm.huf output.ppm.uhuf");
+	system("rm output.ppm output.ppm.huf output.ppm.uhuf");
 
 
 	//Scott is n00b
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  FUNCTION DEFINITIONS of Traverse() and Inverse()
-//////////////////////////////////////////////////////////////////////////////
-void Traverse(char *block, char *arr, int row)
+////////////////////////////////////////////////////////////////////////////////
+void Traverse(char *block, char *arr, int col)
 {
 	int count = 0;
 	int r = 0;
@@ -511,27 +519,27 @@ void Traverse(char *block, char *arr, int row)
 	{
 		if(c < 7)
 		{
-			arr[count++] = block[(r*row) + (c++)];
+			arr[count++] = block[(r*col) + (c++)];
 			if(count == 64)
 				break;
 		}
 		else
-			arr[count++] = block[(r++)*row + c];
+			arr[count++] = block[(r++)*col + c];
 
 		while((r<7) && (c>0))
-		    arr[count++] = block[(r++)*row + (c--)];
+		    arr[count++] = block[(r++)*col + (c--)];
 
 		if(r < 7)
-			arr[count++] = block[(r++)*row + c];
+			arr[count++] = block[(r++)*col + c];
 		else
-			arr[count++] = block[(r*row) + (c++)];
+			arr[count++] = block[(r*col) + (c++)];
 
 		while((r>0) && (c<7))
-			arr[count++] = block[(r--)*row + (c++)];
+			arr[count++] = block[(r--)*col + (c++)];
 	}
 }
 
-void Inverse(char *block, char *arr, int row)
+void Inverse(char *block, char *arr, int col)
 {
 	int count = 0;
 	int r = 0;
@@ -541,23 +549,23 @@ void Inverse(char *block, char *arr, int row)
 	{
 		if(c < 7)
 		{
-			block[(r*row) + (c++)] = arr[count++];
+			block[(r*col) + (c++)] = arr[count++];
 
 			if(count == 64)
 				break;
 		}
 		else
-			block[(r++)*row + c] = arr[count++];
+			block[(r++)*col + c] = arr[count++];
 
 		while((r<7) && (c>0))
-		    block[(r++)*row + (c--)] = arr[count++];
+		    block[(r++)*col + (c--)] = arr[count++];
 
 		if(r < 7)
-			block[(r++)*row + c] = arr[count++];
+			block[(r++)*col + c] = arr[count++];
 		else
-			block[(r*row) + (c++)] = arr[count++];
+			block[(r*col) + (c++)] = arr[count++];
 
 		while((r>0) && (c<7))
-			block[(r--)*row + (c++)] = arr[count++];
+			block[(r--)*col + (c++)] = arr[count++];
 	}
 }
