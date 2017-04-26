@@ -121,6 +121,8 @@ int main (int argc, char **argv)
 	//Timing variables
 	struct timeval startrgb, endrgb, startdct, enddct, startquant, endquant, starthuff, endhuff, startcmptot, endcmptot;
 	struct timeval startirgb, endirgb, startidct, endidct, startiquant, endiquant, startihuff, endihuff, startdectot, enddectot;
+	struct timeval starttot, endtot;
+	gettimeofday(&starttot, NULL);
 	gettimeofday(&startcmptot, NULL);
 
 	//Declaration of variables
@@ -161,29 +163,29 @@ int main (int argc, char **argv)
 	unsigned char *img_c = (unsigned char *)calloc(row*col*3, sizeof(unsigned char));
 
 	//Separate YCbCr matrices
-	int *img_y  = (int *)calloc(img_size, sizeof(int));
-	int *img_cb = (int *)calloc(img_size, sizeof(int));
-	int *img_cr = (int *)calloc(img_size, sizeof(int));
+	int *img_y  = (int *)calloc(img_size*2, sizeof(int));
+	int *img_cb = (int *)calloc(img_size*2, sizeof(int));
+	int *img_cr = (int *)calloc(img_size*2, sizeof(int));
 	//Kernel YCbCr matrices
 	int *ky, *kcb, *kcr;
-	cudaMalloc((void **)&ky, img_size*sizeof(int));
-	cudaMalloc((void **)&kcb, img_size*sizeof(int));
-	cudaMalloc((void **)&kcr, img_size*sizeof(int));
+	cudaMalloc((void **)&ky, img_size*2*sizeof(int));
+	cudaMalloc((void **)&kcb, img_size*2*sizeof(int));
+	cudaMalloc((void **)&kcr, img_size*2*sizeof(int));
 
 	//Discrete cosine transform matrices
-	double *img_dy  = (double *)calloc(img_size, sizeof(double));
-	double *img_dcb = (double *)calloc(img_size, sizeof(double));
-	double *img_dcr = (double *)calloc(img_size, sizeof(double));
+	double *img_dy  = (double *)calloc(img_size*2, sizeof(double));
+	double *img_dcb = (double *)calloc(img_size*2, sizeof(double));
+	double *img_dcr = (double *)calloc(img_size*2, sizeof(double));
 	//Kernel DCT matrices
 	double *kdy, *kdcb, *kdcr;
-	cudaMalloc((void **)&kdy, img_size*sizeof(double));
-	cudaMalloc((void **)&kdcb, img_size*sizeof(double));
-	cudaMalloc((void **)&kdcr, img_size*sizeof(double));
+	cudaMalloc((void **)&kdy, img_size*2*sizeof(double));
+	cudaMalloc((void **)&kdcb, img_size*2*sizeof(double));
+	cudaMalloc((void **)&kdcr, img_size*2*sizeof(double));
 
-	//Quantization matrices (1D)
-	char *img_qy  = (char *)calloc(img_size, sizeof(char));
-	char *img_qcb = (char *)calloc(img_size, sizeof(char));
-	char *img_qcr = (char *)calloc(img_size, sizeof(char));
+	//Quantization matrices
+	char *img_qy  = (char *)calloc(img_size*2, sizeof(char));
+	char *img_qcb = (char *)calloc(img_size*2, sizeof(char));
+	char *img_qcr = (char *)calloc(img_size*2, sizeof(char));
 
 	//Temp arrays for Traverse()
 	char *trav_arr_qy  = (char *)calloc(64, sizeof(char));
@@ -237,9 +239,9 @@ int main (int argc, char **argv)
 	// }
 
 	//Copying YCbCr to Device
-	cudaMemcpy( ky, img_y, img_size*sizeof(int), cudaMemcpyHostToDevice );
-	cudaMemcpy( kcb, img_cb, img_size*sizeof(int), cudaMemcpyHostToDevice );
-	cudaMemcpy( kcr, img_cr, img_size*sizeof(int), cudaMemcpyHostToDevice );
+	cudaMemcpy( ky, img_y, img_size*2*sizeof(int), cudaMemcpyHostToDevice );
+	cudaMemcpy( kcb, img_cb, img_size*2*sizeof(int), cudaMemcpyHostToDevice );
+	cudaMemcpy( kcr, img_cr, img_size*2*sizeof(int), cudaMemcpyHostToDevice );
 	dim3 dimGrid(ceil((double)col / 8),
 		     ceil((double)row / 8),1);
 	dim3 dimBlock(8, 8, 1);
@@ -252,16 +254,16 @@ int main (int argc, char **argv)
 	gettimeofday(&enddct, NULL);
 
 	//Copying results back from device
-	cudaMemcpy( img_dy, kdy, img_size*sizeof(double), cudaMemcpyDeviceToHost );
-	cudaMemcpy( img_dcb, kdcb, img_size*sizeof(double), cudaMemcpyDeviceToHost );
-	cudaMemcpy( img_dcr, kdcr, img_size*sizeof(double), cudaMemcpyDeviceToHost );
+	cudaMemcpy( img_dy, kdy, img_size*2*sizeof(double), cudaMemcpyDeviceToHost );
+	cudaMemcpy( img_dcb, kdcb, img_size*2*sizeof(double), cudaMemcpyDeviceToHost );
+	cudaMemcpy( img_dcr, kdcr, img_size*2*sizeof(double), cudaMemcpyDeviceToHost );
 
-	cudaFree(ky);
-	cudaFree(kcb);
-	cudaFree(kcr);
-	cudaFree(kdy);
-	cudaFree(kdcb);
-	cudaFree(kdcr);
+	// cudaFree(ky);
+	// cudaFree(kcb);
+	// cudaFree(kcr);
+	// cudaFree(kdy);
+	// cudaFree(kdcb);
+	// cudaFree(kdcr);
 
 	// printf("After DCT\n");
 	// for(m=0;m<8;m++){
@@ -338,12 +340,13 @@ int main (int argc, char **argv)
 	gettimeofday(&endcmptot, NULL);
 
 	//Timing outputs in milliseconds
+	// printf("file: %s\n",argv[1]);
 	printf("\n");
-	printf("RGB->YCbCr = %6.3f\n", (double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec));
-	printf("DCT =        %6.3f\n", (double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec));
-	printf("Quant =      %6.3f\n", (double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec));
-	printf("Huffman =    %6.3f\n", (double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec));
-	printf("Compr Tot =  %6.3f\n", (double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec));
+	printf("%6.3f,", (double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec));
+	printf("%6.3f,", (double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec));
+	printf("%6.3f,", (double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec));
+	printf("%6.3f,", (double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec));
+	printf("%6.3f\n", (double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec));
 
 
 
@@ -441,17 +444,17 @@ gettimeofday(&endiquant, NULL);
 	// }
 
 //Iniatializing Device matrices
-cudaMalloc((void **)&kdy, img_size*sizeof(double));
-cudaMalloc((void **)&kdcb, img_size*sizeof(double));
-cudaMalloc((void **)&kdcr, img_size*sizeof(double));
-cudaMalloc((void **)&ky, img_size*sizeof(int));
-cudaMalloc((void **)&kcb, img_size*sizeof(int));
-cudaMalloc((void **)&kcr, img_size*sizeof(int));
+// cudaMalloc((void **)&kdy, img_size*2*sizeof(double));
+// cudaMalloc((void **)&kdcb, img_size*2*sizeof(double));
+// cudaMalloc((void **)&kdcr, img_size*2*sizeof(double));
+// cudaMalloc((void **)&ky, img_size*2*sizeof(int));
+// cudaMalloc((void **)&kcb, img_size*2*sizeof(int));
+// cudaMalloc((void **)&kcr, img_size*2*sizeof(int));
 
 //Copying DCT matrices to device memory
-cudaMemcpy( kdy, img_dy, img_size*sizeof(double), cudaMemcpyHostToDevice );
-cudaMemcpy( kdcb, img_dcb, img_size*sizeof(double), cudaMemcpyHostToDevice );
-cudaMemcpy( kdcr, img_dcr, img_size*sizeof(double), cudaMemcpyHostToDevice );
+cudaMemcpy( kdy, img_dy, img_size*2*sizeof(double), cudaMemcpyHostToDevice );
+cudaMemcpy( kdcb, img_dcb, img_size*2*sizeof(double), cudaMemcpyHostToDevice );
+cudaMemcpy( kdcr, img_dcr, img_size*2*sizeof(double), cudaMemcpyHostToDevice );
 
 gettimeofday(&startidct, NULL);
 	// IDCT
@@ -460,9 +463,9 @@ cudaDeviceSynchronize();
 
 gettimeofday(&endidct, NULL);
 
-cudaMemcpy( img_y, ky, img_size*sizeof(int), cudaMemcpyDeviceToHost );
-cudaMemcpy( img_cb, kcb, img_size*sizeof(int), cudaMemcpyDeviceToHost );
-cudaMemcpy( img_cr, kcr, img_size*sizeof(int), cudaMemcpyDeviceToHost );
+cudaMemcpy( img_y, ky, img_size*2*sizeof(int), cudaMemcpyDeviceToHost );
+cudaMemcpy( img_cb, kcb, img_size*2*sizeof(int), cudaMemcpyDeviceToHost );
+cudaMemcpy( img_cr, kcr, img_size*2*sizeof(int), cudaMemcpyDeviceToHost );
 
 	// printf("After IDCT\n");
 	// for(m=0;m<8;m++){
@@ -486,7 +489,7 @@ gettimeofday(&startirgb, NULL);
 
 int tempr, tempg, tempb;
 
-	//printf("YCbCr->RGB\n");
+	// printf("YCbCr->RGB\n");
 	//YCbCr back to RGB
 	for(m=0; m<row; m++)
 		for(n=0, j=0; n<col; n++, j+=3)
@@ -517,7 +520,7 @@ int tempr, tempg, tempb;
 		// printf("RGB[0][0]\n");
 		// printf("%8d %8d %8d\n",img_c[0][0], img_c[0][1], img_c[0][2]);
 
-	//printf("Write out\n");
+	// printf("Write out\n");
 	//Write out the final, reconstructed RGB image
 	fprintf(g_out, "%s\n", img_type);
 	fprintf(g_out, "%d %d\n", orig_col, orig_row);
@@ -538,11 +541,11 @@ int tempr, tempg, tempb;
 
 	gettimeofday(&enddectot, NULL);
 	printf("\n");
-	printf("YCbCr->RGB = %6.3f\n", (double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec));
-	printf("IDCT =       %6.3f\n", (double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec));
-	printf("IQuant =     %6.3f\n", (double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec));
-	printf("IHuffman =   %6.3f\n", (double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec));
-	printf("Decom Tot =  %6.3f\n", (double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec));
+	printf("%6.3f,", (double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec));
+	printf("%6.3f,", (double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec));
+	printf("%6.3f,", (double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec));
+	printf("%6.3f,", (double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec));
+	printf("%6.3f\n", (double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec));
 
 	// printf("freeing memory\n");
 	//Free allocated memory
@@ -568,6 +571,22 @@ int tempr, tempg, tempb;
 	free(huff);
 
 	// system("rm output.ppm.huf output.ppm.uhuf");
+
+	gettimeofday(&endtot, NULL);
+
+	// printf("%s,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
+	// 				argv[1],orig_col,orig_row,
+	// 				(double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec),
+	// 				(double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec),
+	// 				(double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec),
+	// 				(double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec),
+	// 				(double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec),
+	// 				(double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec),
+	// 				(double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec),
+	// 				(double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec),
+	// 				(double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec),
+	// 				(double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec),
+	// 				(double)(endtot.tv_usec - starttot.tv_usec) / 1000000 + (endtot.tv_sec - starttot.tv_sec));
 
 
 	//Scott is n00b
