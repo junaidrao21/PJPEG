@@ -20,6 +20,8 @@ int main (int argc, char **argv)
 	//Timing variables
 	struct timeval startrgb, endrgb, startdct, enddct, startquant, endquant, starthuff, endhuff, startcmptot, endcmptot;
 	struct timeval startirgb, endirgb, startidct, endidct, startiquant, endiquant, startihuff, endihuff, startdectot, enddectot;
+	struct timeval starttot, endtot;
+	gettimeofday(&starttot, NULL);
 	gettimeofday(&startcmptot, NULL);
 
 	//Declaration of variables
@@ -85,7 +87,7 @@ int main (int argc, char **argv)
 	col = orig_col + (8-(orig_col % 8));
 	if(orig_row % 8 != 0)
 	row = orig_row + (8-(orig_row % 8));
-	printf("%d %d\n",col, row);
+	// printf("%d %d\n",col, row);
 
 	//Full RGB matrix
 	unsigned char *img_c = (unsigned char *)calloc(row*col*3, sizeof(unsigned char));
@@ -149,7 +151,7 @@ int main (int argc, char **argv)
 		}
 	gettimeofday(&endrgb, NULL);
 
-	printf("Before DCT\n");
+	// printf("Before DCT\n");
 	// for(m=0;m<8;m++){
 	// 	for(n=0;n<8;n++)
 	// 		printf("%4d", img_cr[m*col+n]);
@@ -192,7 +194,7 @@ int main (int argc, char **argv)
 
 	gettimeofday(&enddct, NULL);
 
-	printf("After DCT\n");
+	// printf("After DCT\n");
 	// for(m=0;m<8;m++){
 	// 	for(n=0;n<8;n++)
 	// 		printf("%6.2f", img_dcr[m*col+n]);
@@ -212,7 +214,7 @@ int main (int argc, char **argv)
 				}
 	gettimeofday(&endquant, NULL);
 
-	printf("After Quant\n");
+	// printf("After Quant\n");
 	// for(m=0;m<8;m++){
 	// 	for(n=0;n<8;n++)
 	// 		printf("%6d", img_qcr[m*row+n]);
@@ -221,7 +223,7 @@ int main (int argc, char **argv)
 
 	//Linearization of each 8x8 block before compression
 	int count = 1;
-	printf("img_qcr: start = (%p)\n", &img_qcr[row*col-1]);
+	// printf("img_qcr: start = (%p)\n", &img_qcr[row*col-1]);
 	for(m=0; m<row; m+=8)
 		for(n=0; n<col; n+=8)
 		{
@@ -241,7 +243,7 @@ int main (int argc, char **argv)
 			}
 		}
 
-	printf("After Traverse");
+	// printf("After Traverse");
 	// for(m=row*col*2;m<row*col*2+64;m++){
 	// 	if(m%8 == 0)
 	// 		printf("\n");
@@ -267,17 +269,17 @@ int main (int argc, char **argv)
 	gettimeofday(&endcmptot, NULL);
 
 	//Timing outputs in milliseconds
-	printf("\n");
-	printf("RGB->YCbCr = %6.3f\n", (double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec));
-	printf("DCT =        %6.3f\n", (double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec));
-	printf("Quant =      %6.3f\n", (double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec));
-	printf("Huffman =    %6.3f\n", (double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec));
-	printf("Compr Tot =  %6.3f\n", (double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec));
+	// printf("\n");
+	// printf("RGB->YCbCr = %6.3f\n", (double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec));
+	// printf("DCT =        %6.3f\n", (double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec));
+	// printf("Quant =      %6.3f\n", (double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec));
+	// printf("Huffman =    %6.3f\n", (double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec));
+	// printf("Compr Tot =  %6.3f\n", (double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec));
 
 
 
 	gettimeofday(&startdectot, NULL);
-	printf("Decompressing...\n");
+	// printf("Decompressing...\n");
 
 	//Huffman Decompression
 	gettimeofday(&startihuff, NULL);
@@ -309,18 +311,18 @@ int main (int argc, char **argv)
 	col = orig_col + (8-(orig_col % 8));
 	if(orig_row % 8 != 0)
 	row = orig_row + (8-(orig_row % 8));
-	printf("%d %d\n",col, row);
+	// printf("%d %d\n",col, row);
 
 
 	//Prepare huffman array
 	memset(huff, 0, row*col*3*sizeof(char));
 
-	printf("Reading in file\n");
+	// printf("Reading in file\n");
 	//Read in file contents
 	for(m=0; m<row*col*3; m++)
 			fscanf(g_in, "%c", &huff[m]);
 
-	printf("Before ITraverse");
+	// printf("Before ITraverse");
 	// for(m=row*col*2;m<row*col*2+64;m++){
 	// 	if(m%8 == 0)
 	// 		printf("\n");
@@ -328,7 +330,7 @@ int main (int argc, char **argv)
 	// }
 	// printf("\n");
 
-	printf("Reverse Linear\n");
+	// printf("Reverse Linear\n");
 	//Reverse the linearization
 	counter = 0;
 	for(i=0; i<3; i++)
@@ -341,7 +343,7 @@ int main (int argc, char **argv)
 				else
 					Inverse(&img_qcr[m * col + n], (huff + counter*64), col);
 
-	printf("Before IQuant\n");
+	// printf("Before IQuant\n");
 	// for(m=0;m<8;m++){
 	// 	for(n=0;n<8;n++)
 	// 		printf("%6d", img_qcr[m*row+n]);
@@ -476,12 +478,12 @@ int tempr, tempg, tempb;
 	fclose(g_out);
 
 	gettimeofday(&enddectot, NULL);
-	printf("\n");
-	printf("YCbCr->RGB = %6.3f\n", (double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec));
-	printf("IDCT =       %6.3f\n", (double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec));
-	printf("IQuant =     %6.3f\n", (double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec));
-	printf("IHuffman =   %6.3f\n", (double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec));
-	printf("Decom Tot =  %6.3f\n", (double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec));
+	// printf("\n");
+	// printf("YCbCr->RGB = %6.3f\n", (double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec));
+	// printf("IDCT =       %6.3f\n", (double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec));
+	// printf("IQuant =     %6.3f\n", (double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec));
+	// printf("IHuffman =   %6.3f\n", (double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec));
+	// printf("Decom Tot =  %6.3f\n", (double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec));
 
 	// printf("freeing memory\n");
 	//Free allocated memory
@@ -501,7 +503,21 @@ int tempr, tempg, tempb;
 
 	system("rm output.ppm output.ppm.huf output.ppm.uhuf");
 
+	gettimeofday(&endtot, NULL);
 
+	printf("%s,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
+					argv[1],orig_col,orig_row,
+					(double)(endrgb.tv_usec - startrgb.tv_usec) / 1000000 + (endrgb.tv_sec - startrgb.tv_sec),
+					(double)(enddct.tv_usec - startdct.tv_usec) / 1000000 + (enddct.tv_sec - startdct.tv_sec),
+					(double)(endquant.tv_usec - startquant.tv_usec) / 1000000 + (endquant.tv_sec - startquant.tv_sec),
+					(double)(endhuff.tv_usec - starthuff.tv_usec) / 1000000 + (endhuff.tv_sec - starthuff.tv_sec),
+					(double)(endcmptot.tv_usec - startcmptot.tv_usec) / 1000000 + (endcmptot.tv_sec - startcmptot.tv_sec),
+					(double)(endirgb.tv_usec - startirgb.tv_usec) / 1000000 + (endirgb.tv_sec - startirgb.tv_sec),
+					(double)(endidct.tv_usec - startidct.tv_usec) / 1000000 + (endidct.tv_sec - startidct.tv_sec),
+					(double)(endiquant.tv_usec - startiquant.tv_usec) / 1000000 + (endiquant.tv_sec - startiquant.tv_sec),
+					(double)(endihuff.tv_usec - startihuff.tv_usec) / 1000000 + (endihuff.tv_sec - startihuff.tv_sec),
+					(double)(enddectot.tv_usec - startdectot.tv_usec) / 1000000 + (enddectot.tv_sec - startdectot.tv_sec),
+					(double)(endtot.tv_usec - starttot.tv_usec) / 1000000 + (endtot.tv_sec - starttot.tv_sec));
 	//Scott is n00b
 	return 0;
 }
